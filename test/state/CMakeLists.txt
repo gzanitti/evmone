@@ -35,7 +35,8 @@ if(EVMONE_PRECOMPILES_SILKPRE)
     FetchContent_Declare(
         silkpre
         GIT_REPOSITORY https://github.com/torquem-ch/silkpre
-        GIT_TAG 65a89f316ced2e25cbb455ae75eeed9e0bab8415
+        GIT_TAG bd54b9e6f164fc050bdfa3d14050a2405286aec1
+        GIT_SHALLOW TRUE
     )
     set(BUILD_SHARED_LIBS OFF)
     FetchContent_MakeAvailable(silkpre)
@@ -47,9 +48,4 @@ if(EVMONE_PRECOMPILES_SILKPRE)
 
     target_link_libraries(evmone-state PRIVATE silkpre)
     target_compile_definitions(evmone-state PRIVATE EVMONE_PRECOMPILES_SILKPRE=1)
-    target_sources(
-        evmone-state PRIVATE
-        precompiles_silkpre.hpp
-        precompiles_silkpre.cpp
-    )
 endif()
