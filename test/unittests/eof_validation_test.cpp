@@ -24,6 +24,7 @@ TEST(eof_validation, get_error_message)
 {
     EXPECT_EQ(evmone::get_error_message(EOFValidationError::success), "success");
     EXPECT_EQ(evmone::get_error_message(EOFValidationError::invalid_prefix), "invalid_prefix");
+    EXPECT_EQ(evmone::get_error_message(EOFValidationError::stack_overflow), "stack_overflow");
     EXPECT_EQ(evmone::get_error_message(EOFValidationError::impossible), "impossible");
     EXPECT_EQ(evmone::get_error_message(static_cast<EOFValidationError>(-1)), "<unknown>");
 }
@@ -731,6 +732,75 @@ TEST(eof_validation, callf_invalid_code_section_index)
 {
     EXPECT_EQ(validate_eof("EF0001 010004 0200010004 040000 00 00000000 E3000100"),
         EOFValidationError::invalid_code_section_index);
+}
+
+TEST(eof_validation, callf_stack_overflow)
+{
+    {
+        auto code = eof1_bytecode(
+            512 * push(1) + OP_CALLF + bytecode{"0x0000"_hex} + 510 * OP_POP + OP_RETURN, 512);
+        EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+    }
+
+    {
+        auto code = eof1_bytecode(
+            513 * push(1) + OP_CALLF + bytecode{"0x0000"_hex} + 511 * OP_POP + OP_RETURN, 513);
+        EXPECT_EQ(validate_eof(code), EOFValidationError::stack_overflow);
+    }
+
+    {
+        auto code = eof1_bytecode(
+            1023 * push(1) + OP_CALLF + bytecode{"0x0000"_hex} + 1021 * OP_POP + OP_RETURN, 1023);
+        EXPECT_EQ(validate_eof(code), EOFValidationError::stack_overflow);
+    }
+}
+
+TEST(eof_validation, callf_with_inputs_stack_overflow)
+{
+    {
+        const auto code =
+            bytecode{"ef0001 010008 020002 0BFD 0003 040000 00 000003FF 02000002"_hex} +
+            1023 * push(1) + OP_CALLF + bytecode{"0x0001"_hex} + 1019 * OP_POP + OP_RETURN +
+            OP_POP + OP_POP + OP_RETF;
+
+        EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+    }
+
+    {
+        const auto code =
+            bytecode{"ef0001 010008 020002 0BFF 0004 040000 00 000003FF 03030004"_hex} +
+            1023 * push(1) + OP_CALLF + bytecode{"0x0001"_hex} + 1021 * OP_POP + OP_RETURN +
+            push(1) + OP_POP + OP_RETF;
+
+        EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+    }
+
+    {
+        const auto code =
+            bytecode{"ef0001 010008 020002 0BFF 0003 040000 00 000003FF 03050005"_hex} +
+            1023 * push(1) + OP_CALLF + bytecode{"0x0001"_hex} + 1021 * OP_POP + OP_RETURN +
+            OP_PUSH0 + OP_PUSH0 + OP_RETF;
+
+        EXPECT_EQ(validate_eof(code), EOFValidationError::stack_overflow);
+    }
+
+    {
+        const auto code =
+            bytecode{"ef0001 010008 020002 0BFF 0005 040000 00 000003FF 03030005"_hex} +
+            1023 * push(1) + OP_CALLF + bytecode{"0x0001"_hex} + 1021 * OP_POP + OP_RETURN +
+            OP_PUSH0 + OP_PUSH0 + OP_POP + OP_POP + OP_RETF;
+
+        EXPECT_EQ(validate_eof(code), EOFValidationError::stack_overflow);
+    }
+
+    {
+        const auto code =
+            bytecode{"ef0001 010008 020002 0C00 0005 040000 00 000003FF 02000003"_hex} +
+            1024 * push(1) + OP_CALLF + bytecode{"0x0001"_hex} + 1020 * OP_POP + OP_RETURN +
+            OP_PUSH0 + OP_POP + OP_POP + OP_POP + OP_RETF;
+
+        EXPECT_EQ(validate_eof(code), EOFValidationError::stack_overflow);
+    }
 }
 
 TEST(eof_validation, incomplete_section_size)
