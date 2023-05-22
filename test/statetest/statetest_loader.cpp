@@ -353,10 +353,14 @@ static void from_json(const json::json& j, StateTransitionTest& o)
 
     o.block = from_json<state::BlockInfo>(j_t.at("env"));
 
-    if (const auto& info = j_t.at("_info"); info.contains("labels"))
+    // _info is optional
+    if (j_t.contains("_info"))
     {
-        for (const auto& [j_id, j_label] : info.at("labels").items())
-            o.input_labels.emplace(from_json<uint64_t>(j_id), j_label);
+        if (const auto& info = j_t.at("_info"); info.contains("labels"))
+        {
+            for (const auto& [j_id, j_label] : info.at("labels").items())
+                o.input_labels.emplace(from_json<uint64_t>(j_id), j_label);
+        }
     }
 
     for (const auto& [rev_name, expectations] : j_t.at("post").items())

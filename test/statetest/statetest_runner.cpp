@@ -9,7 +9,8 @@
 
 namespace evmone::test
 {
-void run_state_test(const StateTransitionTest& test, evmc::VM& vm)
+void run_state_test(
+    const StateTransitionTest& test, evmc::VM& vm, bool ignore_state_root, bool ignore_logs)
 {
     for (const auto& [rev, cases] : test.cases)
     {
@@ -33,11 +34,23 @@ void run_state_test(const StateTransitionTest& test, evmc::VM& vm)
             state::finalize(state, rev, test.block.coinbase, 0, {});
 
             if (holds_alternative<state::TransactionReceipt>(res))
-                EXPECT_EQ(logs_hash(get<state::TransactionReceipt>(res).logs), expected.logs_hash);
+                if (!ignore_logs)
+                    EXPECT_EQ(
+                        logs_hash(get<state::TransactionReceipt>(res).logs), expected.logs_hash);
+                else
+                    EXPECT_TRUE(true);
             else
                 EXPECT_TRUE(expected.exception);
 
-            EXPECT_EQ(state::mpt_hash(state.get_accounts()), expected.state_hash);
+            if (!ignore_state_root)
+                EXPECT_EQ(state::mpt_hash(state.get_accounts()), expected.state_hash);
+            else
+            {
+                std::cerr << "{";
+                std::cerr << R"("stateRoot": ")" << state::mpt_hash(state.get_accounts()) << "\"";
+                std::cerr << "}\n";
+                EXPECT_TRUE(true);
+            }
         }
     }
 }
