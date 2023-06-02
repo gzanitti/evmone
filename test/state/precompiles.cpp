@@ -221,7 +221,7 @@ std::optional<evmc::Result> call_precompile(evmc_revision rev, const evmc_messag
     if (auto r = cache.find(static_cast<PrecompileId>(id), input, gas_left); r.has_value())
         return r;
 
-    uint8_t output_buf[256];  // Big enough to handle all "expmod" tests.
+    uint8_t output_buf[4096];  // Big enough to handle all "expmod" tests.
     assert(std::size(output_buf) >= max_output_size);
 
     const auto [status_code, output_size] =
