@@ -122,21 +122,8 @@ class InstructionTracer : public Tracer
         m_out << "}\n";
     }
 
-    void on_execution_end(const evmc_result& result) noexcept override
+    void on_execution_end(const evmc_result& /*result*/) noexcept override
     {
-        const auto& ctx = m_contexts.top();
-
-        m_out << "{";
-        m_out << R"("error":)";
-        if (result.status_code == EVMC_SUCCESS)
-            m_out << "null";
-        else
-            m_out << '"' << result.status_code << '"';
-        m_out << R"(,"gas":")" << std::hex << "0x" << result.gas_left;
-        m_out << R"(","gasUsed":")" << std::hex << "0x" << (ctx.start_gas - result.gas_left);
-        m_out << R"(","output":")" << evmc::hex({result.output_data, result.output_size}) << '"';
-        m_out << "}\n";
-
         m_contexts.pop();
     }
 
