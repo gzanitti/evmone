@@ -96,15 +96,9 @@ class InstructionTracer : public Tracer
     }
 
     void on_execution_start(
-        evmc_revision rev, const evmc_message& msg, bytes_view code) noexcept override
+        evmc_revision /*rev*/, const evmc_message& msg, bytes_view code) noexcept override
     {
         m_contexts.emplace(msg.depth, code.data(), msg.gas);
-
-        m_out << "{";
-        m_out << R"("depth":)" << msg.depth;
-        m_out << R"(,"rev":")" << rev << '"';
-        m_out << R"(,"static":)" << (((msg.flags & EVMC_STATIC) != 0) ? "true" : "false");
-        m_out << "}\n";
     }
 
     void on_instruction_start(uint32_t pc, const intx::uint256* stack_top, int stack_height,
