@@ -6,6 +6,7 @@
 #include "precompiles.hpp"
 #include "rlp.hpp"
 #include <evmone/eof.hpp>
+#include <sstream>
 
 namespace evmone::state
 {
@@ -323,7 +324,11 @@ bytes32 Host::get_block_hash(int64_t block_number) const noexcept
     (void)block_number;
     // TODO: This is not properly implemented, but only single state test requires BLOCKHASH
     //       and is fine with any value.
-    return {};
+
+    std::basic_ostringstream<char> os;
+    os << std::hex << block_number;
+    auto s = os.str();
+    return keccak256({reinterpret_cast<uint8_t*>(s.data()), s.size()});
 }
 
 void Host::emit_log(const address& addr, const uint8_t* data, size_t data_size,
