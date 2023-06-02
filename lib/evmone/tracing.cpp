@@ -70,10 +70,12 @@ class InstructionTracer : public Tracer
 {
     struct Context
     {
+        const int32_t depth;
         const uint8_t* const code;  ///< Reference to the code being executed.
         const int64_t start_gas;
 
-        Context(const uint8_t* c, int64_t g) noexcept : code{c}, start_gas{g} {}
+        Context(int32_t d, const uint8_t* c, int64_t g) noexcept : depth{d}, code{c}, start_gas{g}
+        {}
     };
 
     std::stack<Context> m_contexts;
@@ -96,7 +98,7 @@ class InstructionTracer : public Tracer
     void on_execution_start(
         evmc_revision rev, const evmc_message& msg, bytes_view code) noexcept override
     {
-        m_contexts.emplace(code.data(), msg.gas);
+        m_contexts.emplace(msg.depth, code.data(), msg.gas);
 
         m_out << "{";
         m_out << R"("depth":)" << msg.depth;
@@ -112,7 +114,8 @@ class InstructionTracer : public Tracer
 
         const auto opcode = ctx.code[pc];
         m_out << "{";
-        m_out << R"("pc":)" << std::dec << pc;
+        m_out << R"("depth":)" << std::dec << (ctx.depth + 1);
+        m_out << R"(,"pc":)" << std::dec << pc;
         m_out << R"(,"op":)" << std::dec << int{opcode};
         m_out << R"(,"opName":")" << get_name(opcode) << '"';
         m_out << R"(,"gas":"0x)" << std::hex << gas << '"';
