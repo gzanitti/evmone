@@ -115,7 +115,7 @@ class InstructionTracer : public Tracer
         m_out << R"("pc":)" << std::dec << pc;
         m_out << R"(,"op":)" << std::dec << int{opcode};
         m_out << R"(,"opName":")" << get_name(opcode) << '"';
-        m_out << R"(,"gas":0x)" << std::hex << gas;
+        m_out << R"(,"gas":"0x)" << std::hex << gas << '"';
         output_stack(stack_top, stack_height);
 
         // Full memory can be dumped as evmc::hex({state.memory.data(), state.memory.size()}),
@@ -135,9 +135,9 @@ class InstructionTracer : public Tracer
             m_out << "null";
         else
             m_out << '"' << result.status_code << '"';
-        m_out << R"(,"gas":)" << std::hex << "0x" << result.gas_left;
-        m_out << R"(,"gasUsed":)" << std::hex << "0x" << (ctx.start_gas - result.gas_left);
-        m_out << R"(,"output":")" << evmc::hex({result.output_data, result.output_size}) << '"';
+        m_out << R"(,"gas":")" << std::hex << "0x" << result.gas_left;
+        m_out << R"(","gasUsed":")" << std::hex << "0x" << (ctx.start_gas - result.gas_left);
+        m_out << R"(","output":")" << evmc::hex({result.output_data, result.output_size}) << '"';
         m_out << "}\n";
 
         m_contexts.pop();
