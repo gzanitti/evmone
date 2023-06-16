@@ -7,6 +7,7 @@
 #include "instructions_traits.hpp"
 #include <evmc/hex.hpp>
 #include <stack>
+#include <sstream>
 
 namespace evmone
 {
@@ -80,19 +81,20 @@ class InstructionTracer : public Tracer
 
     std::stack<Context> m_contexts;
     std::ostream& m_out;  ///< Output stream.
+    std::ostringstream m_buf;
 
     void output_stack(const intx::uint256* stack_top, int stack_height)
     {
-        m_out << R"(,"stack":[)";
+        m_buf << R"(,"stack":[)";
         const auto stack_end = stack_top + 1;
         const auto stack_begin = stack_end - stack_height;
         for (auto it = stack_begin; it != stack_end; ++it)
         {
             if (it != stack_begin)
-                m_out << ',';
-            m_out << R"("0x)" << to_string(*it, 16) << '"';
+                m_buf << ',';
+            m_buf << R"("0x)" << to_string(*it, 16) << '"';
         }
-        m_out << ']';
+        m_buf << ']';
     }
 
     void on_execution_start(
@@ -107,19 +109,22 @@ class InstructionTracer : public Tracer
         const auto& ctx = m_contexts.top();
 
         const auto opcode = ctx.code[pc];
-        m_out << "{";
-        m_out << R"("depth":)" << std::dec << (ctx.depth + 1);
-        m_out << R"(,"pc":)" << std::dec << pc;
-        m_out << R"(,"op":)" << std::dec << int{opcode};
-        m_out << R"(,"opName":")" << get_name(opcode) << '"';
-        m_out << R"(,"gas":"0x)" << std::hex << gas << '"';
+        m_buf << "{";
+        m_buf << R"("depth":)" << std::dec << (ctx.depth + 1);
+        m_buf << R"(,"pc":)" << std::dec << pc;
+        m_buf << R"(,"op":)" << std::dec << int{opcode};
+        m_buf << R"(,"opName":")" << get_name(opcode) << '"';
+        m_buf << R"(,"gas":"0x)" << std::hex << gas << '"';
         output_stack(stack_top, stack_height);
 
         // Full memory can be dumped as evmc::hex({state.memory.data(), state.memory.size()}),
         // but this should not be done by default. Adding --tracing=+memory option would be nice.
-        m_out << R"(,"memorySize":)" << std::dec << state.memory.size();
+        m_buf << R"(,"memorySize":)" << std::dec << state.memory.size();
 
-        m_out << "}\n";
+        m_buf << "}\n";
+
+        m_out << m_buf.str();
+        m_buf.str({});
     }
 
     void on_execution_end(const evmc_result& /*result*/) noexcept override
