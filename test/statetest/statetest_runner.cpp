@@ -9,8 +9,7 @@
 
 namespace evmone::test
 {
-void run_state_test(
-    const StateTransitionTest& test, evmc::VM& vm, bool ignore_state_root, bool ignore_logs)
+void run_state_test(const StateTransitionTest& test, evmc::VM& vm, bool trace)
 {
     for (const auto& [rev, cases] : test.cases)
     {
@@ -33,24 +32,29 @@ void run_state_test(
             // Finalize block with reward 0.
             state::finalize(state, rev, test.block.coinbase, 0, {});
 
+            const auto state_root = state::mpt_hash(state.get_accounts());
+
+            if (trace)
+            {
+                std::clog << '{';
+                if (holds_alternative<state::TransactionReceipt>(res)) // if tx valid
+                {
+                    const auto& r = get<state::TransactionReceipt>(res);
+                    if (r.status == EVMC_SUCCESS)
+                        std::clog << R"("pass":true)";
+                    else
+                        std::clog << R"("pass":false,"error":")" << r.status << '"';
+                    std::clog << R"(,"gasUsed":"0x)" << std::hex << r.gas_used << R"(",)";
+                }
+                std::clog << R"("stateRoot":"0x)" << hex(state_root) << R"("})" "\n";
+            }
+
             if (holds_alternative<state::TransactionReceipt>(res))
-                if (!ignore_logs)
-                    EXPECT_EQ(
-                        logs_hash(get<state::TransactionReceipt>(res).logs), expected.logs_hash);
-                else
-                    EXPECT_TRUE(true);
+                EXPECT_EQ(logs_hash(get<state::TransactionReceipt>(res).logs), expected.logs_hash);
             else
                 EXPECT_TRUE(expected.exception);
 
-            if (!ignore_state_root)
-                EXPECT_EQ(state::mpt_hash(state.get_accounts()), expected.state_hash);
-            else
-            {
-                std::cerr << "{";
-                std::cerr << R"("stateRoot": ")" << state::mpt_hash(state.get_accounts()) << "\"";
-                std::cerr << "}\n";
-                EXPECT_TRUE(true);
-            }
+            EXPECT_EQ(state_root, expected.state_hash);
         }
     }
 }

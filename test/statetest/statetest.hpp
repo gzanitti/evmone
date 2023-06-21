@@ -89,8 +89,7 @@ StateTransitionTest load_state_test(std::istream& input);
 /// Throws exception on any invalid EOF in state.
 void validate_deployed_code(const state::State& state, evmc_revision rev);
 
-void run_state_test(
-    const StateTransitionTest& test, evmc::VM& vm, bool ignore_state_root, bool ignore_logs);
+void run_state_test(const StateTransitionTest& test, evmc::VM& vm, bool trace);
 
 /// Computes the hash of the RLP-encoded list of transaction logs.
 /// This method is only used in tests.

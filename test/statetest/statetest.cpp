@@ -14,37 +14,28 @@ class StateTest : public testing::Test
 {
     fs::path m_json_test_file;
     evmc::VM& m_vm;
-    bool m_ignore_state_root;
-    bool m_ignore_logs;
+    bool m_trace = false;
 
 public:
-    explicit StateTest(
-        fs::path json_test_file, evmc::VM& vm, bool ignore_state_root, bool ignore_logs) noexcept
-      : m_json_test_file{std::move(json_test_file)},
-        m_vm{vm},
-        m_ignore_state_root(ignore_state_root),
-        m_ignore_logs(ignore_logs)
+    explicit StateTest(fs::path json_test_file, evmc::VM& vm, bool trace) noexcept
+      : m_json_test_file{std::move(json_test_file)}, m_vm{vm}, m_trace{trace}
     {}
 
     void TestBody() final
     {
         std::ifstream f{m_json_test_file};
-        evmone::test::run_state_test(
-            evmone::test::load_state_test(f), m_vm, m_ignore_state_root, m_ignore_logs);
+        evmone::test::run_state_test(evmone::test::load_state_test(f), m_vm, m_trace);
     }
 };
 
-void register_test(const std::string& suite_name, const fs::path& file, evmc::VM& vm,
-    bool ignore_state_root, bool ignore_logs)
+void register_test(const std::string& suite_name, const fs::path& file, evmc::VM& vm, bool trace)
 {
     testing::RegisterTest(suite_name.c_str(), file.stem().string().c_str(), nullptr, nullptr,
-        file.string().c_str(), 0, [file, &vm, ignore_state_root, ignore_logs]() -> testing::Test* {
-            return new StateTest(file, vm, ignore_state_root, ignore_logs);
-        });
+        file.string().c_str(), 0,
+        [file, &vm, trace]() -> testing::Test* { return new StateTest(file, vm, trace); });
 }
 
-void register_test_files(
-    const fs::path& root, evmc::VM& vm, bool ignore_state_root, bool ignore_logs)
+void register_test_files(const fs::path& root, evmc::VM& vm, bool trace)
 {
     if (is_directory(root))
     {
@@ -56,12 +47,11 @@ void register_test_files(
         std::sort(test_files.begin(), test_files.end());
 
         for (const auto& p : test_files)
-            register_test(fs::relative(p, root).parent_path().string(), p, vm, ignore_state_root,
-                ignore_logs);
+            register_test(fs::relative(p, root).parent_path().string(), p, vm, trace);
     }
     else  // Treat as a file.
     {
-        register_test(root.parent_path().string(), root, vm, ignore_state_root, ignore_logs);
+        register_test(root.parent_path().string(), root, vm, trace);
     }
 }
 }  // namespace
@@ -92,11 +82,7 @@ int main(int argc, char* argv[])
             ->check(CLI::ExistingPath);
 
         bool trace_flag = false;
-        bool ignore_state_root = false;
-        bool ignore_logs = false;
         app.add_flag("--trace", trace_flag, "Enable EVM tracing");
-        app.add_flag("--ignore-state-root", ignore_state_root, "Ignore state root");
-        app.add_flag("--ignore-logs", ignore_logs, "Ignore logs");
 
         CLI11_PARSE(app, argc, argv);
 
@@ -106,7 +92,7 @@ int main(int argc, char* argv[])
             vm.set_option("trace", "1");
 
         for (const auto& p : paths)
-            register_test_files(p, vm, ignore_state_root, ignore_logs);
+            register_test_files(p, vm, trace_flag);
 
         return RUN_ALL_TESTS();
     }
