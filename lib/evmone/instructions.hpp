@@ -764,6 +764,18 @@ inline Result gas(StackTop stack, int64_t gas_left, ExecutionState& /*state*/) n
     return {EVMC_SUCCESS, gas_left};
 }
 
+inline void tload(StackTop stack, ExecutionState& state) noexcept
+{
+    (void)state;
+    stack.push({});
+}
+
+inline void tstore(StackTop stack, ExecutionState& state) noexcept
+{
+    (void)state;
+    stack.push({});
+}
+
 inline void push0(StackTop stack) noexcept
 {
     stack.push({});
