@@ -766,14 +766,16 @@ inline Result gas(StackTop stack, int64_t gas_left, ExecutionState& /*state*/) n
 
 inline void tload(StackTop stack, ExecutionState& state) noexcept
 {
-    (void)state;
-    stack.push({});
+    const auto key = intx::be::store<evmc::bytes32>(stack.pop());
+    const auto value = state.host.get_transient_storage(state.msg->recipient, key);
+    stack.push(intx::be::load<uint256>(value));
 }
 
 inline void tstore(StackTop stack, ExecutionState& state) noexcept
 {
-    (void)state;
-    stack.push({});
+    const auto key = intx::be::store<evmc::bytes32>(stack.pop());
+    const auto value = intx::be::store<evmc::bytes32>(stack.pop());
+    state.host.set_transient_storage(state.msg->recipient, key, value);
 }
 
 inline void push0(StackTop stack) noexcept

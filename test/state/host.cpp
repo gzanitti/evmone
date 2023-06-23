@@ -276,7 +276,7 @@ evmc::Result Host::call(const evmc_message& orig_msg) noexcept
         return evmc::Result{EVMC_FAILURE, orig_msg.gas};  // Light exception.
 
     auto state_snapshot = m_state;
-    auto logs_snapshot = m_logs.size();
+    const auto logs_snapshot = m_logs.size();
 
     auto result = execute_message(*msg);
 
@@ -355,16 +355,14 @@ evmc_access_status Host::access_storage(const address& addr, const bytes32& key)
 
 evmc::bytes32 Host::get_transient_storage(const address& addr, const bytes32& key) const noexcept
 {
-    const auto ait = m_transient_storage.find(addr);
-    if (ait == m_transient_storage.end())
-        return {};
-    const auto it = ait->second.find(key);
-    return it != ait->second.end() ? it->second : bytes32{};
+    const auto& acc = m_state.get(addr);
+    const auto it = acc.transient_storage.find(key);
+    return it != acc.transient_storage.end() ? it->second : bytes32{};
 }
 
 void Host::set_transient_storage(
     const address& addr, const bytes32& key, const bytes32& value) noexcept
 {
-    m_transient_storage[addr][key] = value;
+    m_state.get(addr).transient_storage[key] = value;
 }
 }  // namespace evmone::state

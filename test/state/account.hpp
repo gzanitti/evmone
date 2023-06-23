@@ -38,7 +38,9 @@ struct Account
     intx::uint256 balance = {};
 
     /// The account storage map.
-    std::unordered_map<bytes32, StorageValue> storage = {};
+    std::unordered_map<bytes32, StorageValue> storage;
+
+    std::unordered_map<bytes32, bytes32> transient_storage;
 
     /// The account code.
     bytes code = {};

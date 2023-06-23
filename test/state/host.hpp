@@ -33,8 +33,6 @@ class Host : public evmc::Host
     evmc_revision m_rev;
     evmc::VM& m_vm;
     State& m_state;
-    std::unordered_map<evmc::address, std::unordered_map<evmc::bytes32, evmc::bytes32>>
-        m_transient_storage;
     const BlockInfo& m_block;
     const Transaction& m_tx;
     std::vector<Log> m_logs;
