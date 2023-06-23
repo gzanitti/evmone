@@ -33,6 +33,8 @@ class Host : public evmc::Host
     evmc_revision m_rev;
     evmc::VM& m_vm;
     State& m_state;
+    std::unordered_map<evmc::address, std::unordered_map<evmc::bytes32, evmc::bytes32>>
+        m_transient_storage;
     const BlockInfo& m_block;
     const Transaction& m_tx;
     std::vector<Log> m_logs;
@@ -54,6 +56,12 @@ private:
         const address& addr, const bytes32& key) const noexcept override;
 
     evmc_storage_status set_storage(
+        const address& addr, const bytes32& key, const bytes32& value) noexcept override;
+
+    evmc::bytes32 get_transient_storage(
+        const address& addr, const bytes32& key) const noexcept override;
+
+    void set_transient_storage(
         const address& addr, const bytes32& key, const bytes32& value) noexcept override;
 
     [[nodiscard]] uint256be get_balance(const address& addr) const noexcept override;

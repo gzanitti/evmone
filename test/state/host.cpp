@@ -351,4 +351,20 @@ evmc_access_status Host::access_storage(const address& addr, const bytes32& key)
 {
     return std::exchange(m_state.get(addr).storage[key].access_status, EVMC_ACCESS_WARM);
 }
+
+
+evmc::bytes32 Host::get_transient_storage(const address& addr, const bytes32& key) const noexcept
+{
+    const auto ait = m_transient_storage.find(addr);
+    if (ait == m_transient_storage.end())
+        return {};
+    const auto it = ait->second.find(key);
+    return it != ait->second.end() ? it->second : bytes32{};
+}
+
+void Host::set_transient_storage(
+    const address& addr, const bytes32& key, const bytes32& value) noexcept
+{
+    m_transient_storage[addr][key] = value;
+}
 }  // namespace evmone::state
