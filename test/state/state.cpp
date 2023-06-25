@@ -39,7 +39,22 @@ int64_t compute_access_list_cost(const AccessList& access_list) noexcept
     return cost;
 }
 
-int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Transaction& tx) noexcept
+uint64_t fake_exponential(uint64_t factor, uint64_t numerator, uint64_t denominator)
+{
+    uint64_t i = 1;
+    uint64_t output = 0;
+    auto numerator_accum = factor * denominator;
+    while (numerator_accum > 0)
+    {
+        output += numerator_accum;
+        numerator_accum = (numerator_accum * numerator) / (denominator * i);
+        i += 1;
+    }
+    return output / denominator;
+}
+
+int64_t compute_tx_intrinsic_cost(
+    evmc_revision rev, const Transaction& tx, uint64_t excess_data_gas) noexcept
 {
     static constexpr auto call_tx_cost = 21000;
     static constexpr auto create_tx_cost = 53000;
@@ -48,8 +63,19 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Transaction& tx) noex
     const auto initcode_cost =
         is_create && rev >= EVMC_SHANGHAI ? initcode_word_cost * num_words(tx.data.size()) : 0;
     const auto tx_cost = is_create && rev >= EVMC_HOMESTEAD ? create_tx_cost : call_tx_cost;
-    return tx_cost + compute_tx_data_cost(rev, tx.data) + compute_access_list_cost(tx.access_list) +
-           initcode_cost;
+    auto c = tx_cost + compute_tx_data_cost(rev, tx.data) +
+             compute_access_list_cost(tx.access_list) + initcode_cost;
+
+    if (tx.type == Transaction::Type::blob)
+    {
+        static constexpr auto DATA_GAS_PER_BLOB = 0x20000;
+        const auto data_gas_price = fake_exponential(1, excess_data_gas, 3338477);
+        const auto total_data_gas = DATA_GAS_PER_BLOB * tx.blob_hashes.size();
+        const auto data_fee = total_data_gas * data_gas_price;
+        c += static_cast<int64_t>(data_fee);
+    }
+
+    return c;
 }
 
 /// Validates transaction and computes its execution gas limit (the amount of gas provided to EVM).
@@ -59,6 +85,17 @@ std::variant<int64_t, std::error_code> validate_transaction(const Account& sende
 {
     switch (tx.type)
     {
+    case Transaction::Type::blob:
+        if (rev < EVMC_CANCUN)
+            return make_error_code(TX_TYPE_NOT_SUPPORTED);
+        if (!tx.to.has_value())
+            return make_error_code(create_blob_tx);
+        if (tx.blob_hashes.empty())
+            return make_error_code(empty_blob_hashes_list);
+        if (std::ranges::any_of(tx.blob_hashes, [](const auto& h) { return h.bytes[0] != 0x01; }))
+            return make_error_code(invalid_blob_hash_version);
+        [[fallthrough]];
+
     case Transaction::Type::eip1559:
         if (rev < EVMC_LONDON)
             return make_error_code(TX_TYPE_NOT_SUPPORTED);
@@ -101,7 +138,8 @@ std::variant<int64_t, std::error_code> validate_transaction(const Account& sende
         sender_acc.balance < tx_cost_limit_512)
         return make_error_code(INSUFFICIENT_FUNDS);
 
-    const auto execution_gas_limit = tx.gas_limit - compute_tx_intrinsic_cost(rev, tx);
+    const auto execution_gas_limit =
+        tx.gas_limit - compute_tx_intrinsic_cost(rev, tx, block.excess_data_gas);
     if (execution_gas_limit < 0)
         return make_error_code(INTRINSIC_GAS_TOO_LOW);
 
