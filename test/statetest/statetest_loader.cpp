@@ -181,9 +181,20 @@ state::BlockInfo from_json<state::BlockInfo>(const json::json& j)
         }
     }
 
+    uint64_t excess_data_gas = 0;
+    if (const auto it = j.find("parentExcessDataGas"); it != j.end())
+    {
+        const auto parent_excess_data_gas = from_json<uint64_t>(*it);
+        const auto parent_data_gas_used = from_json<uint64_t>(j.at("parentDataGasUsed"));
+        static constexpr uint64_t TARGET_DATA_GAS_PER_BLOCK = 0x60000;
+        excess_data_gas =
+            std::max(parent_excess_data_gas + parent_data_gas_used, TARGET_DATA_GAS_PER_BLOCK) -
+            TARGET_DATA_GAS_PER_BLOCK;
+    }
+
     return {from_json<int64_t>(j.at("currentNumber")), from_json<int64_t>(j.at("currentTimestamp")),
         from_json<int64_t>(j.at("currentGasLimit")),
-        from_json<evmc::address>(j.at("currentCoinbase")), difficulty, base_fee,
+        from_json<evmc::address>(j.at("currentCoinbase")), difficulty, base_fee, excess_data_gas,
         std::move(withdrawals)};
 }
 
@@ -270,6 +281,13 @@ static void from_json_tx_common(const json::json& j, state::Transaction& o)
         o.type = state::Transaction::Type::eip1559;
         o.max_gas_price = from_json<intx::uint256>(j.at("maxFeePerGas"));
         o.max_priority_gas_price = from_json<intx::uint256>(j.at("maxPriorityFeePerGas"));
+    }
+
+    if (const auto it = j.find("blobVersionedHashes"); it != j.end())
+    {
+        o.type = state::Transaction::Type::blob;
+        for (const auto& hash : *it)
+            o.blob_hashes.push_back(from_json<bytes32>(hash));
     }
 }
 
