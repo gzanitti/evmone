@@ -71,10 +71,10 @@ UintT ModArith<UintT>::mul(const UintT& x, const UintT& y) const noexcept
         }
         tmp = addc(t[S], c);
         t[S - 1] = tmp.value;
-        t[S] = d + tmp.carry;  // TODO: Untested.
+        t[S] = d + tmp.carry;  // TODO: Carry is 0 for sparse modulus.
     }
 
-    if (t >= mod)
+    if (t >= mod)  // TODO: cannot overflow if modulus is sparse (e.g. 255 bits).
         t -= mod;
 
     return static_cast<UintT>(t);
