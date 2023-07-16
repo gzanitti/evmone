@@ -46,6 +46,7 @@ UintT ModArith<UintT>::mul(const UintT& x, const UintT& y) const noexcept
 {
     // Coarsely Integrated Operand Scanning (CIOS) Method
     // Based on 2.3.2 from
+    // High-Speed Algorithms & Architectures For Number-Theoretic Cryptosystems
     // https://www.microsoft.com/en-us/research/wp-content/uploads/1998/06/97Acar.pdf
 
     static constexpr auto S = UintT::num_words;
