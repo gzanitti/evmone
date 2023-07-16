@@ -27,6 +27,7 @@ constexpr auto BLS12384Mod =
 template <typename UintT, const UintT& Mod>
 struct ModA : ModArith<UintT>
 {
+    using uint = UintT;
     ModA() : ModArith<UintT>{Mod} {}
 };
 

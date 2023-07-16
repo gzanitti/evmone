@@ -13,30 +13,28 @@ template <typename UintT>
 class ModArith
 {
 public:
-    using uint = UintT;
-
-    const uint mod;  ///< The modulus.
+    const UintT mod;  ///< The modulus.
 
 private:
-    const uint m_r_squared;    ///< R² % mod.
+    const UintT m_r_squared;   ///< R² % mod.
     const uint64_t m_mod_inv;  ///< The modulus inversion.
 
 public:
-    explicit ModArith(const uint& modulus) noexcept;
+    explicit ModArith(const UintT& modulus) noexcept;
 
     /// Converts a value to Montgomery form.
-    uint to_mont(const uint& x) const noexcept;
+    UintT to_mont(const UintT& x) const noexcept;
 
     /// Converts a value in Montgomery form back to normal value.
-    uint from_mont(const uint& x) const noexcept;
+    UintT from_mont(const UintT& x) const noexcept;
 
     /// Performs a Montgomery modular multiplication. Inputs must be in Montgomery form.
-    uint mul(const uint& x, const uint& y) const noexcept;
+    UintT mul(const UintT& x, const UintT& y) const noexcept;
 
     /// Performs a modular addition.
-    uint add(const uint& x, const uint& y) const noexcept;
+    UintT add(const UintT& x, const UintT& y) const noexcept;
 
     /// Performs a modular subtraction.
-    uint sub(const uint& x, const uint& y) const noexcept;
+    UintT sub(const UintT& x, const UintT& y) const noexcept;
 };
 }  // namespace evmmax
