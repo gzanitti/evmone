@@ -22,7 +22,7 @@ private:
     const uint64_t m_mod_inv;  ///< The modulus inversion.
 
 public:
-    explicit ModArith(const UintT& modulus) noexcept;
+    explicit ModArith(const uint& modulus) noexcept;
 
     /// Converts a value to Montgomery form.
     uint to_mont(const uint& x) const noexcept;
