@@ -1310,3 +1310,26 @@ TEST(eof_validation, dataloadn)
                            "00000000000000001111111111111111222222222222222233333333333333"),
         EOFValidationError::invalid_dataloadn_index);
 }
+
+TEST(eof_validation, non_constant_stack_height)
+{
+    // Final "OP_PUSH0 + OP_PUSH0 + OP_REVERT" can be reached with stack heights: 0, 2 or 1
+    auto code = eof1_bytecode(rjumpi(7, OP_PUSH0) + OP_PUSH0 + OP_PUSH0 + rjumpi(1, OP_PUSH0) +
+                                  OP_POP + OP_PUSH0 + OP_PUSH0 + OP_REVERT,
+        4);
+    EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+
+    // Final "OP_POP + OP_PUSH0 + OP_PUSH0 + OP_REVERT" can be reached with stack heights: 1, 3 or 2
+    code = eof1_bytecode(OP_PUSH0 + rjumpi(7, OP_PUSH0) + OP_PUSH0 + OP_PUSH0 +
+                             rjumpi(1, OP_PUSH0) + OP_POP + OP_PUSH0 + OP_PUSH0 + OP_REVERT,
+        5);
+
+    EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+
+    // Final "OP_POP + OP_POP + OP_PUSH0 + OP_PUSH0 + OP_REVERT" can be reached with stack heights:
+    // 0, 2 or 1. Stack underflow when height is 0.
+    code = eof1_bytecode(rjumpi(7, OP_PUSH0) + OP_PUSH0 + OP_PUSH0 + rjumpi(1, OP_PUSH0) + OP_POP +
+                             OP_POP + OP_PUSH0 + OP_PUSH0 + OP_REVERT,
+        4);
+    EXPECT_EQ(validate_eof(code), EOFValidationError::stack_underflow);
+}
