@@ -877,6 +877,33 @@ TEST(eof_validation, non_returning_status)
         EOFValidationError::invalid_non_returning_flag);
 }
 
+TEST(eof_validation, jumpf_equal_outputs)
+{
+    const auto code =
+        bytecode{"ef0001 01000c 020003 0004 0003 0004 040000 00 00800003 00030000 00030003"_hex} +
+        OP_CALLF + "0001" + OP_STOP + OP_JUMPF + "0002" + 3 * OP_PUSH0 + OP_RETF;
+
+    EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+}
+
+TEST(eof_validation, jumpf_compatible_outputs)
+{
+    const auto code =
+        bytecode{"ef0001 01000c 020003 0004 0005 0004 040000 00 00800005 00050002 00030003"_hex} +
+        OP_CALLF + "0001" + OP_STOP + 2 * OP_PUSH0 + OP_JUMPF + "0002" + 3 * OP_PUSH0 + OP_RETF;
+
+    EXPECT_EQ(validate_eof(code), EOFValidationError::success);
+}
+
+TEST(eof_validation, jumpf_incompatible_outputs)
+{
+    const auto code =
+        bytecode{"ef0001 01000c 020003 0004 0005 0004 040000 00 00800003 00030002 00050003"_hex} +
+        OP_CALLF + "0001" + OP_STOP + OP_JUMPF + "0002" + 5 * OP_PUSH0 + OP_RETF;
+
+    EXPECT_EQ(validate_eof(code), EOFValidationError::jumpf_destination_incompatible_outputs);
+}
+
 TEST(eof_validation, jumpf_into_nonreturning_stack_validation)
 {
     // Exactly required inputs on stack at JUMPF
